@@ -23,6 +23,10 @@ blob_container = os.getenv('AZURE_STORAGE_CONTAINER_NAME')
 blob_base_url = os.getenv('BLOB_BASE_URL')
 blob_service_client = BlobServiceClient.from_connection_string(blob_conn_str)
 
+#AdminVariables
+ADMIN_LOGIN_CRED = os.getenv('ADMIN_LOGIN_CRED')
+ADMIN_PASS_CRED = os.getenv('ADMIN_PASS_CRED')
+
 # Initialize session state
 if 'page' not in st.session_state:
     st.session_state.page = 'login'
@@ -673,7 +677,7 @@ elif st.session_state.page == 'admin_login':
         if admin_login_button:
             if admin_username and admin_password:
                 # Simple hardcoded admin check (replace with database check later)
-                if admin_username == 'admin' and admin_password == 'admin123':  # CHANGE THIS!
+                if admin_username == ADMIN_LOGIN_CRED and admin_password == ADMIN_PASS_CRED:  # CHANGE THIS!
                     st.session_state.is_admin = True
                     st.session_state.admin_user = admin_username
                     st.session_state.page = 'admin_dashboard'
