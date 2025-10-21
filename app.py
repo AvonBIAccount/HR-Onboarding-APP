@@ -7,6 +7,9 @@ import datetime
 import uuid
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from datetime import timedelta
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 # Load server details
 load_dotenv('secrets.env')
@@ -26,6 +29,46 @@ blob_service_client = BlobServiceClient.from_connection_string(blob_conn_str)
 #AdminVariables
 ADMIN_LOGIN_CRED = os.getenv('ADMIN_LOGIN_CRED')
 ADMIN_PASS_CRED = os.getenv('ADMIN_PASS_CRED')
+
+#SMTP Creds
+OFFICE_SENDER_EMAIL=os.getenv('OFFICE_SENDER_EMAIL')
+OUTLOOK_APP_PASSWORD=os.getenv("OUTLOOK_APP_PASSWORD")
+
+DISCLAIMER_HTML = '''
+<em>This email and any attachments are confidential and intended solely for the use of the named addressee. If you have received this message in error, please notify the sender immediately, delete it from your system, and refrain from copying, disclosing, or acting on its contents. Please note that internet communications are not guaranteed to be secure or free of viruses. Avon Healthcare Limited does not accept liability for any loss or damage arising from the unauthorized access to, or interference with, internet communications by any third party, or from the transmission of any viruses. Any views or opinions expressed that do not relate to the official business of Avon Healthcare Limited are those of the author and do not reflect the views or policies of Avon Healthcare Limited.</em>
+'''
+
+def send_email(to_emails, subject, body_html, cc_emails=None):
+    """
+    Send email using Outlook SMTP
+    to_emails: list of recipient emails
+    subject: email subject line
+    body_html: HTML formatted email body
+    cc_emails: list of CC recipient emails (optional)
+    Returns: True if successful, False otherwise
+    """
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['From'] = OFFICE_SENDER_EMAIL
+        msg['Subject'] = subject
+        if isinstance(to_emails, str):
+            to_emails = [to_emails]
+        msg['To'] = ', '.join(to_emails)
+        all_recipients = to_emails[:]
+        if cc_emails:
+            if isinstance(cc_emails, str):
+                cc_emails = [cc_emails]
+            msg['Cc'] = ', '.join(cc_emails)
+            all_recipients += cc_emails
+        msg.attach(MIMEText(body_html, 'html'))
+        with smtplib.SMTP('smtp.office365.com', 587) as server:
+            server.starttls()
+            server.login(OFFICE_SENDER_EMAIL, OUTLOOK_APP_PASSWORD)
+            server.sendmail(OFFICE_SENDER_EMAIL, all_recipients, msg.as_string())
+        return True
+    except Exception as e:
+        st.warning(f"Email sending failed: {str(e)}")
+        return False
 
 # Initialize session state
 if 'page' not in st.session_state:
@@ -607,6 +650,59 @@ elif st.session_state.page == 'agent_info':
                             
                             conn.commit()
                             
+                            # Send Welcome Email to Agent
+                            welcome_body = f'''
+<html>
+<body>
+<p>Dear {first_name},</p>
+<p>Thank you for registering as a freelance, independent sales agent. Please note the following rules:</p>
+<ol>
+    <li><strong>Confidentiality and Privacy</strong> – As a freelance agent, you may encounter sensitive business and client information. You are expected to keep such information private, use it only for the purpose of promoting our plans, and never share it with competitors or unauthorised parties. All client data and personal information must be handled in line with data protection and privacy standards. Please read our privacy policy here.</li>
+    <li><strong>Plans Available for Sale:</strong><br>
+        a. <strong>Local (Retail)</strong> – Life Starter, Couples Plan, Life Plus, Premium Life, Boss Life, and Executive Boss.<br>
+        b. <strong>Local (Corporate)</strong> – Basic, Vital, Plus, Premium, Premium Plus, Prestige, Prestige Plus, and Executive Prestige.<br>
+        c. <strong>International</strong> – BUPA and ACE.</li>
+    <li><strong>Commission</strong> – Commission is earned only on completed sales where the premium has been fully paid, and enrolment finalised. Commissions are calculated monthly and paid at the following rates:<br>
+        * Local Plans (Retail) – 10% per individual or family. The Couples Plan may only be sold to couples.<br>
+        * Local Plans (Corporate) – 10% per individual or family<br>
+        * International Plans (BUPA) – 2.5% (sold alone), 3% (with local plans), 4% (with ACE), 5% (with ACE + local plans).<br>
+        * International Plans (ACE) – 3% (sold alone), 4% (with Bupa or local plans), 5% (with Bupa + local plans).<br>
+        We may review our commission rates from time to time, and notify you in such instances.</li>
+    <li><strong>Family Definition and Age Limits</strong> – For local plans, a "Family" means a principal, one spouse, and up to 4 children (maximum of 6 persons). Children must be under 18 years for retail plans and under 21 years for corporate plans. The age limit for a principal or spouse is 60 years for retail plans and 65 years for corporate plans.</li>
+</ol>
+<p>Best regards,<br>Avon Healthcare Limited</p>
+<hr>
+{DISCLAIMER_HTML}
+</body>
+</html>
+'''
+                            welcome_success = send_email(st.session_state.email, 'Welcome to Avon Healthcare - Freelance Sales Agent Registration', welcome_body)
+                            if not welcome_success:
+                                st.warning('Welcome email could not be sent')
+                            
+                            # Send HR/Sales Notification
+                            hr_body = f'''
+<html>
+<body>
+<p>Dear HR/Sales Team,</p>
+<p>A new agent has submitted their application for review.</p>
+<p><strong>Agent Details:</strong><br>
+- Name: {first_name} {surname}<br>
+- Email: {st.session_state.email}<br>
+- Application Reference: {application_ref}<br>
+- Agent ID: {agent_id_input}<br>
+- Submitted Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
+<p>Please log in to the admin portal to review this application.</p>
+<p>Best regards,<br>Avon Healthcare System</p>
+</body>
+</html>
+'''
+                            hr_success = send_email(['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'New Agent Application Submitted - Review Required', hr_body) #hr email and sales head email go here
+                            if hr_success:
+                                st.success('✅ Application submitted and notifications sent successfully!')
+                            else:
+                                st.success('✅ Application submitted (notification to HR/Sales failed)')
+                            
                             # Update session state with new agent ID
                             st.session_state.agent_id = agent_id_input
                             
@@ -781,7 +877,7 @@ elif st.session_state.page == 'admin_login':
         if admin_login_button:
             if admin_username and admin_password:
                 # Simple hardcoded admin check (replace with database check later)
-                if admin_username == ADMIN_LOGIN_CRED and admin_password == ADMIN_PASS_CRED:  # CHANGE THIS!
+                if admin_username == ADMIN_LOGIN_CRED and admin_password == ADMIN_PASS_CRED: 
                     st.session_state.is_admin = True
                     st.session_state.admin_user = admin_username
                     st.session_state.page = 'admin_dashboard'
@@ -937,7 +1033,35 @@ elif st.session_state.page == 'admin_dashboard':
                                         ('Approved', datetime.datetime.now(), agent['id'])
                                     )
                                     conn.commit()
-                                    st.success(f"Agent {agent['agent_id']} approved")
+                                    
+                                    # Send Approval Email
+                                    approval_body = f'''
+<html>
+<body>
+<p>Dear {agent['first_name']} {agent['surname']},</p>
+<p>Congratulations! Your application to become a freelance sales agent with Avon Healthcare has been approved.</p>
+<p><strong>Your Agent Details:</strong><br>
+- Agent ID: {agent['agent_id']}<br>
+- Application Reference: {agent['application_ref']}<br>
+- Status: Approved<br>
+- Approval Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
+<p>You can now log in to your agent portal and begin your work. If you have any questions, please contact our HR team.</p>
+<p>Best regards,<br>Avon Healthcare Limited</p>
+<hr>
+{DISCLAIMER_HTML}
+</body>
+</html>
+'''
+                                    approval_success = send_email(
+                                        agent['email'],
+                                        'Congratulations! Your Agent Application has been Approved',
+                                        approval_body,
+                                        cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                    )
+                                    if approval_success:
+                                        st.success(f"Agent {agent['agent_id']} approved and notification sent")
+                                    else:
+                                        st.success(f"Agent {agent['agent_id']} approved (email notification failed)")
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Error approving agent: {e}")
@@ -949,7 +1073,35 @@ elif st.session_state.page == 'admin_dashboard':
                                         ('Rejected', datetime.datetime.now(), agent['id'])
                                     )
                                     conn.commit()
-                                    st.success(f"Agent {agent['agent_id']} rejected")
+                                    
+                                    # Send Rejection Email
+                                    rejection_body = f'''
+<html>
+<body>
+<p>Dear {agent['first_name']} {agent['surname']},</p>
+<p>Thank you for your interest in becoming a freelance sales agent with Avon Healthcare.</p>
+<p>After careful review, we regret to inform you that your application has not been approved at this time.</p>
+<p><strong>Your Application Details:</strong><br>
+- Application Reference: {agent['application_ref']}<br>
+- Status: Not Approved<br>
+- Review Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
+<p>If you have any questions about this decision, please contact our HR team at ifeoluwa.adeniyi@avonhealthcare.com.</p>
+<p>Best regards,<br>Avon Healthcare Limited</p>
+<hr>
+{DISCLAIMER_HTML}
+</body>
+</html>
+'''
+                                    rejection_success = send_email(
+                                        agent['email'],
+                                        'Agent Application Update - Application Not Approved',
+                                        rejection_body,
+                                        cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                    )
+                                    if rejection_success:
+                                        st.success(f"Agent {agent['agent_id']} rejected and notification sent")
+                                    else:
+                                        st.success(f"Agent {agent['agent_id']} rejected (email notification failed)")
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"Error rejecting agent: {e}")
@@ -1095,7 +1247,35 @@ elif st.session_state.page == 'admin_agent_detail':
                                 ('Approved', datetime.datetime.now(), agent_id)
                             )
                             conn.commit()
-                            st.success(f"Agent {agent['agent_id']} approved")
+                            
+                            # Send Approval Email
+                            approval_body = f'''
+<html>
+<body>
+<p>Dear {agent['first_name']} {agent['surname']},</p>
+<p>Congratulations! Your application to become a freelance sales agent with Avon Healthcare has been approved.</p>
+<p><strong>Your Agent Details:</strong><br>
+- Agent ID: {agent['agent_id']}<br>
+- Application Reference: {agent['application_ref']}<br>
+- Status: Approved<br>
+- Approval Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
+<p>You can now log in to your agent portal and begin your work. If you have any questions, please contact our HR team.</p>
+<p>Best regards,<br>Avon Healthcare Limited</p>
+<hr>
+{DISCLAIMER_HTML}
+</body>
+</html>
+'''
+                            approval_success = send_email(
+                                agent['email'],
+                                'Congratulations! Your Agent Application has been Approved',
+                                approval_body,
+                                cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                            )
+                            if approval_success:
+                                st.success(f"Agent {agent['agent_id']} approved and notification sent")
+                            else:
+                                st.success(f"Agent {agent['agent_id']} approved (email notification failed)")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error approving agent: {e}")
@@ -1107,7 +1287,35 @@ elif st.session_state.page == 'admin_agent_detail':
                                 ('Rejected', datetime.datetime.now(), agent_id)
                             )
                             conn.commit()
-                            st.success(f"Agent {agent['agent_id']} rejected")
+                            
+                            # Send Rejection Email
+                            rejection_body = f'''
+<html>
+<body>
+<p>Dear {agent['first_name']} {agent['surname']},</p>
+<p>Thank you for your interest in becoming a freelance sales agent with Avon Healthcare.</p>
+<p>After careful review, we regret to inform you that your application has not been approved at this time.</p>
+<p><strong>Your Application Details:</strong><br>
+- Application Reference: {agent['application_ref']}<br>
+- Status: Not Approved<br>
+- Review Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
+<p>If you have any questions about this decision, please contact our HR team at ifeoluwa.adeniyi@avonhealthcare.com.</p>
+<p>Best regards,<br>Avon Healthcare Limited</p>
+<hr>
+{DISCLAIMER_HTML}
+</body>
+</html>
+'''
+                            rejection_success = send_email(
+                                agent['email'],
+                                'Agent Application Update - Application Not Approved',
+                                rejection_body,
+                                cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                            )
+                            if rejection_success:
+                                st.success(f"Agent {agent['agent_id']} rejected and notification sent")
+                            else:
+                                st.success(f"Agent {agent['agent_id']} rejected (email notification failed)")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error rejecting agent: {e}")
