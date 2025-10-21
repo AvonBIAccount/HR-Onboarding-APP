@@ -181,6 +181,24 @@ def validate_file(file, max_size_mb, allowed_extensions):
     
     return True, "Valid"
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_lgas_for_state(state_name):
+    """Fetch LGAs for a specific state from database"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT DISTINCT lga_name 
+            FROM dim_nigerian_states_lgas 
+            WHERE state_name = ? 
+            ORDER BY lga_name
+        """, (state_name,))
+        lgas = [row[0] for row in cursor.fetchall()]
+        return lgas if lgas else ['N/A']
+    except Exception as e:
+        st.error(f"Error fetching LGAs: {e}")
+        return ['N/A']
+
 # ============================================================================
 # LOGIN PAGE
 # ============================================================================
@@ -334,6 +352,22 @@ elif st.session_state.page == 'agent_info':
     if conn is None:
         st.stop()
     cursor = conn.cursor()
+    # Add sidebar navigation for agents
+    with st.sidebar:
+        st.title("Navigation")
+        if st.button("🏠 Dashboard", use_container_width=True):
+            st.session_state.page = 'dashboard'
+            st.rerun()
+        if st.button("📝 Update My Information", use_container_width=True):
+            st.session_state.page = 'agent_info'
+            st.rerun()
+        if st.button("👤 View Profile", use_container_width=True):
+            st.session_state.page = 'profile'
+            st.rerun()
+        st.write("---")
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
     st.title('Agent Information Form')
     st.write('Please complete all required fields and upload necessary documents.')
     with st.form('agent_info_form', clear_on_submit=False):
@@ -384,8 +418,8 @@ elif st.session_state.page == 'agent_info':
             gender = st.selectbox('Gender *', gender_options, index=gender_index, key='gender')
         with col2:
             surname = st.text_input('Surname *', value=agent_data_prefill.get('surname', ''), key='surname')
+            # Age is auto-calculated but not displayed in the form
             age = (datetime.date.today() - date_of_birth).days // 365
-            st.text_input('Age (auto-calculated)', value=str(age), disabled=True, key='age')
             marital_options = ['Single', 'Married', 'Divorced', 'Widowed']
             marital_index = marital_options.index(agent_data_prefill.get('marital_status', 'Single')) if agent_data_prefill.get('marital_status') in marital_options else 0
             marital_status = st.selectbox('Marital Status *', marital_options, index=marital_index, key='marital_status')
@@ -408,7 +442,16 @@ elif st.session_state.page == 'agent_info':
             state = st.selectbox('State *', state_list, index=state_index, key='state')
         with col4:
             email_display = st.text_input('Email', value=st.session_state.get('email', ''), disabled=True, key='email_display')
-            lga = st.text_input('Local Government Area *', value=agent_data_prefill.get('lga', ''), key='lga')
+            # Get LGAs for selected state
+            lga_options = get_lgas_for_state(state)
+            
+            # Find index of prefilled LGA
+            prefilled_lga = agent_data_prefill.get('lga', '')
+            lga_index = 0
+            if prefilled_lga and prefilled_lga in lga_options:
+                lga_index = lga_options.index(prefilled_lga)
+            
+            lga = st.selectbox('Local Government Area *', lga_options, index=lga_index, key='lga')
 
         # Next of Kin
         st.subheader('Next of Kin')
@@ -576,28 +619,36 @@ elif st.session_state.page == 'agent_info':
                     st.error(f'Error submitting application: {e}')
                     conn.rollback()
     
-    st.write('---')
-    if st.button('← Logout'):
-        st.session_state.clear()
-        st.rerun()
+
 
 # ============================================================================
 # DASHBOARD PAGE
 # ============================================================================
 elif st.session_state.page == 'dashboard':
+    conn = get_db_connection()
+    if conn is None:
+        st.stop()
+    cursor = conn.cursor()
+    # Add sidebar navigation for agents
+    with st.sidebar:
+        st.title("Navigation")
+        if st.button("🏠 Dashboard", use_container_width=True):
+            st.session_state.page = 'dashboard'
+            st.rerun()
+        if st.button("📝 Update My Information", use_container_width=True):
+            st.session_state.page = 'agent_info'
+            st.rerun()
+        if st.button("👤 View Profile", use_container_width=True):
+            st.session_state.page = 'profile'
+            st.rerun()
+        st.write("---")
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
     st.title('Welcome to your agent dashboard')
     st.success('You have successfully logged in.')
     st.write('Use the navigation options to proceed.')
-    st.write('---')
-    if st.button('Update My Information'):
-        st.session_state.page = 'agent_info'
-        st.rerun()
-    if st.button('Go to Profile'):
-        st.session_state.page = 'profile'
-        st.rerun()
-    if st.button('Logout'):
-        st.session_state.clear()
-        st.rerun()
+
 
 # ============================================================================
 # AGENT PROFILE/DASHBOARD
@@ -607,6 +658,22 @@ elif st.session_state.page == 'profile':
     if conn is None:
         st.stop()
     cursor = conn.cursor()
+    # Add sidebar navigation for agents
+    with st.sidebar:
+        st.title("Navigation")
+        if st.button("🏠 Dashboard", use_container_width=True):
+            st.session_state.page = 'dashboard'
+            st.rerun()
+        if st.button("📝 Update My Information", use_container_width=True):
+            st.session_state.page = 'agent_info'
+            st.rerun()
+        if st.button("👤 View Profile", use_container_width=True):
+            st.session_state.page = 'profile'
+            st.rerun()
+        st.write("---")
+        if st.button("🚪 Logout", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
     st.title('Agent Dashboard')
     st.write(f"Welcome back! **{st.session_state.get('email', '')}**")
     
@@ -696,10 +763,7 @@ elif st.session_state.page == 'profile':
     except Exception as e:
         st.error(f'Error loading profile: {e}')
     
-    st.write('---')
-    if st.button('Logout'):
-        st.session_state.clear()
-        st.rerun()
+
 
 # ============================================================================
 # ADMIN LOGIN PAGE
