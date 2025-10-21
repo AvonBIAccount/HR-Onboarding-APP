@@ -36,31 +36,55 @@ if 'db_id' not in st.session_state:
     st.session_state.db_id = None
 
 # Database connection function
-@st.cache_resource
 def get_db_connection():
-    """Create and cache database connection"""
+    """Get or create a session-based database connection with validation"""
+    if 'db_conn' not in st.session_state or st.session_state.db_conn is None:
+        try:
+            st.session_state.db_conn = pyodbc.connect(
+                "DRIVER={ODBC Driver 17 for SQL Server};SERVER="
+                + server
+                + ';DATABASE='
+                + database
+                + ';UID='
+                + username
+                + ';PWD='
+                + password
+            )
+        except Exception as e:
+            st.error(f"Database connection failed: {e}")
+            st.session_state.db_conn = None
+            return None
+    
+    # Validate connection
     try:
-        conn = pyodbc.connect(
-            "DRIVER={ODBC Driver 17 for SQL Server};SERVER="
-            + server
-            + ';DATABASE='
-            + database
-            + ';UID='
-            + username
-            + ';PWD='
-            + password
-        )
-        return conn
+        cursor = st.session_state.db_conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
+        return st.session_state.db_conn
     except Exception as e:
-        st.error(f"Database connection failed: {e}")
-        return None
+        # Connection is invalid, try to reconnect
+        try:
+            st.session_state.db_conn.close()
+        except:
+            pass
+        try:
+            st.session_state.db_conn = pyodbc.connect(
+                "DRIVER={ODBC Driver 17 for SQL Server};SERVER="
+                + server
+                + ';DATABASE='
+                + database
+                + ';UID='
+                + username
+                + ';PWD='
+                + password
+            )
+            return st.session_state.db_conn
+        except Exception as e:
+            st.error(f"Database reconnection failed: {e}")
+            st.session_state.db_conn = None
+            return None
 
-# Get connection
-conn = get_db_connection()
-if conn is None:
-    st.stop()
 
-cursor = conn.cursor()
 
 # Blob storage helper functions
 def upload_to_blob(file, document_type, application_ref):
@@ -161,6 +185,10 @@ def validate_file(file, max_size_mb, allowed_extensions):
 # LOGIN PAGE
 # ============================================================================
 if st.session_state.page == 'login':
+    conn = get_db_connection()
+    if conn is None:
+        st.stop()
+    cursor = conn.cursor()
     st.title('Agent Portal Login')
     st.write('Login with your email and password to access the portal.')
     
@@ -218,6 +246,10 @@ if st.session_state.page == 'login':
 # CREATE ACCOUNT PAGE
 # ============================================================================
 elif st.session_state.page == 'create_account':
+    conn = get_db_connection()
+    if conn is None:
+        st.stop()
+    cursor = conn.cursor()
     st.title('Create a New Account')
     st.write('Register to start your agent application process.')
     
@@ -298,6 +330,10 @@ elif st.session_state.page == 'create_account':
 # AGENT INFORMATION FORM
 # ============================================================================
 elif st.session_state.page == 'agent_info':
+    conn = get_db_connection()
+    if conn is None:
+        st.stop()
+    cursor = conn.cursor()
     st.title('Agent Information Form')
     st.write('Please complete all required fields and upload necessary documents.')
     with st.form('agent_info_form', clear_on_submit=False):
@@ -567,6 +603,10 @@ elif st.session_state.page == 'dashboard':
 # AGENT PROFILE/DASHBOARD
 # ============================================================================
 elif st.session_state.page == 'profile':
+    conn = get_db_connection()
+    if conn is None:
+        st.stop()
+    cursor = conn.cursor()
     st.title('Agent Dashboard')
     st.write(f"Welcome back! **{st.session_state.get('email', '')}**")
     
@@ -715,6 +755,10 @@ elif st.session_state.page == 'test_page':
 # ADMIN DASHBOARD
 # ============================================================================
 elif st.session_state.page == 'admin_dashboard':
+    conn = get_db_connection()
+    if conn is None:
+        st.stop()
+    cursor = conn.cursor()
     if not st.session_state.get('is_admin', False):
         st.error("Unauthorized access. Please log in as admin.")
         st.session_state.page = 'admin_login'
@@ -858,6 +902,10 @@ elif st.session_state.page == 'admin_dashboard':
 # ADMIN AGENT DETAIL VIEW
 # ============================================================================
 elif st.session_state.page == 'admin_agent_detail':
+    conn = get_db_connection()
+    if conn is None:
+        st.stop()
+    cursor = conn.cursor()
     if not st.session_state.get('is_admin', False):
         st.error("Unauthorized access. Please log in as admin.")
         st.session_state.page = 'admin_login'
@@ -1018,4 +1066,3 @@ elif st.session_state.page == 'admin_agent_detail':
         if st.button('Logout'):
             st.session_state.clear()
             st.rerun()
-
