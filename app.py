@@ -972,7 +972,7 @@ elif st.session_state.page == 'admin_dashboard':
         search_query = st.text_input("Search by Name, Email, or Agent ID", key="search_query")
 
     # Build SQL Query
-    query = "SELECT id, first_name, surname, agent_id, email, application_status, state, region, submitted_date FROM agents"
+    query = "SELECT id, first_name, surname, agent_id, email, application_status, state, region, submitted_date, application_ref FROM agents"
     conditions = []
     params = []
 
@@ -1034,15 +1034,21 @@ elif st.session_state.page == 'admin_dashboard':
                                     )
                                     conn.commit()
                                     
-                                    # Send Approval Email
-                                    approval_body = f'''
+                                    # Fetch complete agent data for email
+                                    cursor.execute("SELECT * FROM agents WHERE id = ?", (agent['id'],))
+                                    full_agent_data = cursor.fetchone()
+                                    if full_agent_data:
+                                        columns = [col[0] for col in cursor.description]
+                                        agent_dict = dict(zip(columns, full_agent_data))
+                                        # Send Approval Email
+                                        approval_body = f'''
 <html>
 <body>
-<p>Dear {agent['first_name']} {agent['surname']},</p>
+<p>Dear {agent_dict['first_name']} {agent_dict['surname']},</p>
 <p>Congratulations! Your application to become a freelance sales agent with Avon Healthcare has been approved.</p>
 <p><strong>Your Agent Details:</strong><br>
-- Agent ID: {agent['agent_id']}<br>
-- Application Reference: {agent['application_ref']}<br>
+- Agent ID: {agent_dict['agent_id']}<br>
+- Application Reference: {agent_dict['application_ref']}<br>
 - Status: Approved<br>
 - Approval Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
 <p>You can now log in to your agent portal and begin your work. If you have any questions, please contact our HR team.</p>
@@ -1052,17 +1058,19 @@ elif st.session_state.page == 'admin_dashboard':
 </body>
 </html>
 '''
-                                    approval_success = send_email(
-                                        agent['email'],
-                                        'Congratulations! Your Agent Application has been Approved',
-                                        approval_body,
-                                        cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
-                                    )
-                                    if approval_success:
-                                        st.success(f"Agent {agent['agent_id']} approved and notification sent")
+                                        approval_success = send_email(
+                                            agent_dict['email'],
+                                            'Congratulations! Your Agent Application has been Approved',
+                                            approval_body,
+                                            cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                        )
+                                        if approval_success:
+                                            st.success(f"Agent {agent_dict['agent_id']} approved and notification sent")
+                                        else:
+                                            st.success(f"Agent {agent_dict['agent_id']} approved (email notification failed)")
+                                        st.rerun()
                                     else:
-                                        st.success(f"Agent {agent['agent_id']} approved (email notification failed)")
-                                    st.rerun()
+                                        st.error("Failed to fetch updated agent data")
                                 except Exception as e:
                                     st.error(f"Error approving agent: {e}")
                         with col3:
@@ -1074,15 +1082,21 @@ elif st.session_state.page == 'admin_dashboard':
                                     )
                                     conn.commit()
                                     
-                                    # Send Rejection Email
-                                    rejection_body = f'''
+                                    # Fetch complete agent data for email
+                                    cursor.execute("SELECT * FROM agents WHERE id = ?", (agent['id'],))
+                                    full_agent_data = cursor.fetchone()
+                                    if full_agent_data:
+                                        columns = [col[0] for col in cursor.description]
+                                        agent_dict = dict(zip(columns, full_agent_data))
+                                        # Send Rejection Email
+                                        rejection_body = f'''
 <html>
 <body>
-<p>Dear {agent['first_name']} {agent['surname']},</p>
+<p>Dear {agent_dict['first_name']} {agent_dict['surname']},</p>
 <p>Thank you for your interest in becoming a freelance sales agent with Avon Healthcare.</p>
 <p>After careful review, we regret to inform you that your application has not been approved at this time.</p>
 <p><strong>Your Application Details:</strong><br>
-- Application Reference: {agent['application_ref']}<br>
+- Application Reference: {agent_dict['application_ref']}<br>
 - Status: Not Approved<br>
 - Review Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
 <p>If you have any questions about this decision, please contact our HR team at ifeoluwa.adeniyi@avonhealthcare.com.</p>
@@ -1092,17 +1106,19 @@ elif st.session_state.page == 'admin_dashboard':
 </body>
 </html>
 '''
-                                    rejection_success = send_email(
-                                        agent['email'],
-                                        'Agent Application Update - Application Not Approved',
-                                        rejection_body,
-                                        cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
-                                    )
-                                    if rejection_success:
-                                        st.success(f"Agent {agent['agent_id']} rejected and notification sent")
+                                        rejection_success = send_email(
+                                            agent_dict['email'],
+                                            'Agent Application Update - Application Not Approved',
+                                            rejection_body,
+                                            cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                        )
+                                        if rejection_success:
+                                            st.success(f"Agent {agent_dict['agent_id']} rejected and notification sent")
+                                        else:
+                                            st.success(f"Agent {agent_dict['agent_id']} rejected (email notification failed)")
+                                        st.rerun()
                                     else:
-                                        st.success(f"Agent {agent['agent_id']} rejected (email notification failed)")
-                                    st.rerun()
+                                        st.error("Failed to fetch updated agent data")
                                 except Exception as e:
                                     st.error(f"Error rejecting agent: {e}")
     except Exception as e:
