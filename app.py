@@ -1107,7 +1107,7 @@ elif st.session_state.page == 'admin_dashboard':
 - Application Reference: {agent_dict['application_ref']}<br>
 - Status: Approved<br>
 - Approval Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
-<p>You can now log in to your agent portal and begin your work. If you have any questions, please contact our HR team.</p>
+<p>You can now log in to your agent portal and begin your work https://independent-agentapp.streamlit.app/ . If you have any questions, please contact our HR team.</p>
 <p>Best regards,<br>Avon Healthcare Limited</p>
 <hr>
 {DISCLAIMER_HTML}
@@ -1331,7 +1331,7 @@ elif st.session_state.page == 'admin_agent_detail':
 - Application Reference: {agent['application_ref']}<br>
 - Status: Approved<br>
 - Approval Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
-<p>You can now log in to your agent portal and begin your work. If you have any questions, please contact our HR team.</p>
+<p>You can now log in to your agent portal and begin your work https://independent-agentapp.streamlit.app/. If you have any questions, please contact our HR team.</p>
 <p>Best regards,<br>Avon Healthcare Limited</p>
 <hr>
 {DISCLAIMER_HTML}
