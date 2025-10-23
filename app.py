@@ -370,7 +370,7 @@ elif st.session_state.page == 'create_account':
                             )
                             OUTPUT INSERTED.id
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (application_ref, auto_agent_id, 'Pending', 'Completion', 
+                        ''', (application_ref, auto_agent_id, '', '',  # Empty strings instead of 'Pending' and 'Completion' 
                             datetime.date(1990, 1, 1), '00000000000', email, 
                             'Incomplete', created_at, email))
                         # Get the auto-generated ID
@@ -583,7 +583,11 @@ elif st.session_state.page == 'agent_info':
 
         # Single submit button
         st.write('---')
-        submit_info = st.form_submit_button('Submit Application', use_container_width=True)
+        # Determine if this is an update or initial submission
+        is_update = agent_data_prefill.get('application_status') not in [None, 'Incomplete']
+        button_text = 'Update Application' if is_update else 'Submit Application'
+
+        submit_info = st.form_submit_button(button_text, use_container_width=True)
         
         if submit_info:
             # Validation
