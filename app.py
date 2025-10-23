@@ -673,55 +673,83 @@ elif st.session_state.page == 'agent_info':
                                                       ))
                             
                             conn.commit()
-                            
-                            # Send Welcome Email to Agent
-                            welcome_body = f'''
-<html>
-<body>
-<p>Dear {first_name},</p>
-<p>Thank you for registering as a freelance, independent sales agent. Please note the following rules:</p>
-<ol>
-    <li><strong>Confidentiality and Privacy</strong> – As a freelance agent, you may encounter sensitive business and client information. You are expected to keep such information private, use it only for the purpose of promoting our plans, and never share it with competitors or unauthorised parties. All client data and personal information must be handled in line with data protection and privacy standards. Please read our privacy policy here.</li>
-    <li><strong>Plans Available for Sale:</strong><br>
-        a. <strong>Local (Retail)</strong> – Life Starter, Couples Plan, Life Plus, Premium Life, Boss Life, and Executive Boss.<br>
-        b. <strong>Local (Corporate)</strong> – Basic, Vital, Plus, Premium, Premium Plus, Prestige, Prestige Plus, and Executive Prestige.<br>
-        c. <strong>International</strong> – BUPA and ACE.</li>
-    <li><strong>Commission</strong> – Commission is earned only on completed sales where the premium has been fully paid, and enrolment finalised. Commissions are calculated monthly and paid at the following rates:<br>
-        * Local Plans (Retail) – 10% per individual or family. The Couples Plan may only be sold to couples.<br>
-        * Local Plans (Corporate) – 10% per individual or family<br>
-        * International Plans (BUPA) – 2.5% (sold alone), 3% (with local plans), 4% (with ACE), 5% (with ACE + local plans).<br>
-        * International Plans (ACE) – 3% (sold alone), 4% (with Bupa or local plans), 5% (with Bupa + local plans).<br>
-        We may review our commission rates from time to time, and notify you in such instances.</li>
-    <li><strong>Family Definition and Age Limits</strong> – For local plans, a "Family" means a principal, one spouse, and up to 4 children (maximum of 6 persons). Children must be under 18 years for retail plans and under 21 years for corporate plans. The age limit for a principal or spouse is 60 years for retail plans and 65 years for corporate plans.</li>
-</ol>
-<p>Best regards,<br>Avon Healthcare Limited</p>
-<hr>
-{DISCLAIMER_HTML}
-</body>
-</html>
-'''
-                            welcome_success = send_email(st.session_state.email, 'Welcome to Avon Healthcare - Freelance Sales Agent Registration', welcome_body)
-                            if not welcome_success:
-                                st.warning('Welcome email could not be sent')
-                            
-                            # Send HR/Sales Notification
-                            hr_body = f'''
-<html>
-<body>
-<p>Dear HR/Sales Team,</p>
-<p>A new agent has submitted their application for review.</p>
-<p><strong>Agent Details:</strong><br>
-- Name: {first_name} {surname}<br>
-- Email: {st.session_state.email}<br>
-- Application Reference: {application_ref}<br>
-- Agent ID: {agent_id_input}<br>
-- Submitted Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
-<p>Please log in to the admin portal to review this application.</p>
-<p>Best regards,<br>Avon Healthcare System</p>
-</body>
-</html>
-'''
-                            hr_success = send_email(['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'New Agent Application Submitted - Review Required', hr_body) #hr email and sales head email go here
+                            # Check if this is first submission or an update
+                            is_first_submission = agent_data_prefill.get('application_status') == 'Incomplete'
+                            if is_first_submission:
+                                # Send Welcome Email to Agent (ONLY on first submission)
+                                welcome_body = f'''
+        <html>
+        <body>
+        <p>Dear {first_name},</p>
+        <p>Thank you for registering as a freelance, independent sales agent. Please note the following rules:</p>
+        <ol>
+        <li><strong>Confidentiality and Privacy</strong> – As a freelance agent, you may encounter sensitive business and client information. You are expected to keep such information private, use it only for the purpose of promoting our plans, and never share it with competitors or unauthorised parties. All client data and personal information must be handled in line with data protection and privacy standards. Please read our privacy policy here.</li>
+        <li><strong>Plans Available for Sale:</strong><br> a. <strong>Local (Retail)</strong> – Life Starter, Couples Plan, Life Plus, Premium Life, Boss Life, and Executive Boss.<br> b. <strong>Local (Corporate)</strong> – Basic, Vital, Plus, Premium, Premium Plus, Prestige, Prestige Plus, and Executive Prestige.<br> c. <strong>International</strong> – BUPA and ACE.</li>
+        <li><strong>Commission</strong> – Commission is earned only on completed sales where the premium has been fully paid, and enrolment finalised. Commissions are calculated monthly and paid at the following rates:<br> * Local Plans (Retail) – 10% per individual or family. The Couples Plan may only be sold to couples.<br> * Local Plans (Corporate) – 10% per individual or family<br> * International Plans (BUPA) – 2.5% (sold alone), 3% (with local plans), 4% (with ACE), 5% (with ACE + local plans).<br> * International Plans (ACE) – 3% (sold alone), 4% (with Bupa or local plans), 5% (with Bupa + local plans).<br> We may review our commission rates from time to time, and notify you in such instances.</li>
+        <li><strong>Family Definition and Age Limits</strong> – For local plans, a "Family" means a principal, one spouse, and up to 4 children (maximum of 6 persons). Children must be under 18 years for retail plans and under 21 years for corporate plans. The age limit for a principal or spouse is 60 years for retail plans and 65 years for corporate plans.</li>
+        </ol>
+        <p>Best regards,<br>Avon Healthcare Limited</p>
+        <hr>
+        {DISCLAIMER_HTML}
+        </body>
+        </html>
+    '''
+                                welcome_success = send_email(st.session_state.email, 'Welcome to Avon Healthcare - Freelance Sales Agent Registration', welcome_body)
+                                if not welcome_success:
+                                    st.warning('Welcome email could not be sent')
+                                # Send HR/Sales Notification for NEW application
+                                hr_body = f'''
+        <html>
+        <body>
+        <p>Dear HR/Sales Team,</p>
+        <p>A new agent has submitted their application for review.</p>
+        <p><strong>Agent Details:</strong><br> - Name: {first_name} {surname}<br> - Email: {st.session_state.email}<br> - Application Reference: {application_ref}<br> - Agent ID: {agent_id_input}<br> - Submitted Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
+        <p>Please log in to the admin portal to review this application.</p>
+        <p>Best regards,<br>Avon Healthcare System</p>
+        </body>
+        </html>
+    '''
+                                hr_success = send_email(['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'New Agent Application Submitted - Review Required', hr_body)
+                                if hr_success:
+                                    st.success('✅ Application submitted and notifications sent successfully!')
+                                else:
+                                    st.success('✅ Application submitted (notification to HR/Sales failed)')
+                            else:
+                                # Send update confirmation to agent only (no welcome email)
+                                update_body = f'''
+        <html>
+        <body>
+        <p>Dear {first_name},</p>
+        <p>Your profile information has been updated successfully.</p>
+        <p><strong>Your Details:</strong><br> - Agent ID: {agent_id_input}<br> - Application Reference: {application_ref}<br> - Updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+        <p>If you did not make this change, please contact HR immediately.</p>
+        <p>Best regards,<br>Avon Healthcare Limited</p>
+        <hr>
+        {DISCLAIMER_HTML}
+        </body>
+        </html>
+    '''
+                                update_success = send_email(st.session_state.email, 'Profile Updated Successfully', update_body)
+                                # Send HR notification for UPDATE
+                                hr_update_body = f'''
+        <html>
+        <body>
+        <p>Dear HR/Sales Team,</p>
+        <p>An agent has updated their profile information.</p>
+        <p><strong>Agent Details:</strong><br> - Name: {first_name} {surname}<br> - Email: {st.session_state.email}<br> - Application Reference: {application_ref}<br> - Agent ID: {agent_id_input}<br> - Updated Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}<br> - Current Status: {agent_data_prefill.get('application_status', 'Unknown')}</p>
+        <p>Please log in to the admin portal to review the changes if necessary.</p>
+        <p>Best regards,<br>Avon Healthcare System</p>
+        </body>
+        </html>
+    '''
+                                hr_update_success = send_email(['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'Agent Profile Updated - Information Changed', hr_update_body)
+                                if update_success and hr_update_success:
+                                    st.success('✅ Profile updated and notifications sent successfully!')
+                                elif update_success:
+                                    st.success('✅ Profile updated (HR notification failed)')
+                                else:
+                                    st.success('✅ Profile updated (email notifications failed)')
+ #hr email and sales head email go here
                             if hr_success:
                                 st.success('✅ Application submitted and notifications sent successfully!')
                             else:
@@ -823,16 +851,21 @@ elif st.session_state.page == 'profile':
             # Display application reference and agent ID
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Application Reference", agent_dict.get('application_ref', 'N/A'))
+                st.markdown("**Application Reference**")
+                st.write(agent_dict.get('application_ref', 'N/A'))
             with col2:
+                st.markdown("**Agent ID**")
                 if status == 'Approved' and agent_dict.get('agent_id'):
-                    st.metric("Agent ID", agent_dict.get('agent_id', 'N/A'))
+                    st.write(agent_dict.get('agent_id', 'N/A'))
                 else:
-                    st.metric("Agent ID", "Pending Approval")
+                    st.caption("Pending Approval")  # caption has smaller font
             with col3:
+                st.markdown("**Submitted On**")
                 submitted_date = agent_dict.get('submitted_date')
                 if submitted_date:
-                    st.metric("Submitted On", submitted_date.strftime('%Y-%m-%d'))
+                    st.write(submitted_date.strftime('%Y-%m-%d'))
+                else:
+                    st.write('N/A')
             
             # If application is incomplete, prompt to complete
             if status == 'Incomplete':
