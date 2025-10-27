@@ -551,7 +551,7 @@ elif st.session_state.page == 'agent_info':
                 'Guaranty Trust Bank', 'Heritage Bank', 'Keystone Bank', 'Polaris Bank',
                 'Providus Bank', 'Stanbic IBTC Bank', 'Standard Chartered Bank', 
                 'Sterling Bank', 'Union Bank of Nigeria', 'United Bank for Africa', 
-                'Unity Bank', 'Wema Bank', 'Zenith Bank'
+                'Unity Bank', 'Wema Bank', 'Zenith Bank','Opay','Palm Pay', 'MoniePoint', 'Kuda', 'Carbon'
             ]
             bank_index = bank_list.index(agent_data_prefill.get('bank_name', 'Access Bank')) if agent_data_prefill.get('bank_name') in bank_list else 0
             bank_name = st.selectbox('Bank Name *', bank_list, index=bank_index, key='bank_name')
