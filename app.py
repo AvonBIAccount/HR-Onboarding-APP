@@ -704,7 +704,7 @@ elif st.session_state.page == 'agent_info':
         <p>Dear HR/Sales Team,</p>
         <p>A new agent has submitted their application for review.</p>
         <p><strong>Agent Details:</strong><br> - Name: {first_name} {surname}<br> - Email: {st.session_state.email}<br> - Application Reference: {application_ref}<br> - Agent ID: {agent_id_input}<br> - Submitted Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
-        <p>Please log in to the admin portal to review this application.</p>
+        <p>Please log in to the admin portal to review this application https://independent-agentapp.streamlit.app/ </p>
         <p>Best regards,<br>Avon Healthcare System</p>
         </body>
         </html>
@@ -737,7 +737,7 @@ elif st.session_state.page == 'agent_info':
         <p>Dear HR/Sales Team,</p>
         <p>An agent has updated their profile information.</p>
         <p><strong>Agent Details:</strong><br> - Name: {first_name} {surname}<br> - Email: {st.session_state.email}<br> - Application Reference: {application_ref}<br> - Agent ID: {agent_id_input}<br> - Updated Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}<br> - Current Status: {agent_data_prefill.get('application_status', 'Unknown')}</p>
-        <p>Please log in to the admin portal to review the changes if necessary.</p>
+        <p>Please log in to the admin portal to review the changes if necessary https://independent-agentapp.streamlit.app/ </p>
         <p>Best regards,<br>Avon Healthcare System</p>
         </body>
         </html>
@@ -1331,7 +1331,7 @@ elif st.session_state.page == 'admin_agent_detail':
 - Application Reference: {agent['application_ref']}<br>
 - Status: Approved<br>
 - Approval Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
-<p>You can now log in to your agent portal and begin your work https://independent-agentapp.streamlit.app/. If you have any questions, please contact our HR team.</p>
+<p>You can now log in to your agent portal and begin your work https://independent-agentapp.streamlit.app/ . If you have any questions, please contact our HR team.</p>
 <p>Best regards,<br>Avon Healthcare Limited</p>
 <hr>
 {DISCLAIMER_HTML}
