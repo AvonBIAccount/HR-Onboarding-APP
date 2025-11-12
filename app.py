@@ -561,12 +561,16 @@ elif st.session_state.page == 'agent_info':
 
         # Business Information
         st.subheader('Business Information')
-        col11, col12 = st.columns(2)
+        col11, col12, col13 = st.columns(3)
         with col11:
             region_list = ['North', 'South', 'East', 'West', 'Central', 'Multi-Region']
             region_index = region_list.index(agent_data_prefill.get('region', 'North')) if agent_data_prefill.get('region') in region_list else 0
             region = st.selectbox('Region/Zone of Operation *', region_list, index=region_index, key='region')
         with col12:
+            agent_category_list = ['Heirs Agent', 'Independent Agent']
+            agent_category_index = agent_category_list.index(agent_data_prefill.get('Agentcategory', 'Independent Agent')) if agent_data_prefill.get('Agentcategory') in agent_category_list else 1
+            agent_category = st.selectbox('Agent Category *', agent_category_list, index=agent_category_index, key='agent_category')
+        with col13:
             preferred_territory = st.text_input('Preferred Territory (Optional)', value=agent_data_prefill.get('preferred_territory', ''), key='preferred_territory')
 
         # Document Uploads
@@ -596,6 +600,8 @@ elif st.session_state.page == 'agent_info':
             
             if not first_name or not surname:
                 errors.append("First name and surname are required")
+            if not agent_category:
+                errors.append("Agent category is required")
             if not mobile_number or len(mobile_number) != 11:
                 errors.append("Mobile number must be 11 digits")
             if not account_number or len(account_number) != 10:
@@ -659,7 +665,7 @@ elif st.session_state.page == 'agent_info':
                                                       state = ?, lga = ?, nok_name = ?, nok_relationship = ?, nok_contact = ?,
                                                       id_type = ?, id_number = ?, id_document_blob_url = ?, id_document_blob_name = ?,
                                                       bank_name = ?, account_number = ?, account_name = ?, region = ?, 
-                                                      preferred_territory = ?, passport_photo_blob_url = ?, passport_photo_blob_name = ?,
+                                                      preferred_territory = ?, Agentcategory = ?, passport_photo_blob_url = ?, passport_photo_blob_name = ?,
                                                       address_proof_blob_url = ?, address_proof_blob_name = ?,
                                                       application_status = ?, submitted_date = ?, updated_at = ?
                                                       WHERE id = ?
@@ -667,7 +673,7 @@ elif st.session_state.page == 'agent_info':
                                                       prefix, first_name, surname, date_of_birth, age, gender, marital_status,
                                                       mobile_number, residential_address, state, lga, nok_name, nok_relationship,
                                                       nok_contact, id_type, id_number, id_url, id_blob_name, bank_name,
-                                                      account_number, account_name, region, preferred_territory, passport_url,
+                                                      account_number, account_name, region, preferred_territory, agent_category, passport_url,
                                                       passport_blob_name, address_url, address_blob_name, 'Pending',
                                                       datetime.datetime.now(), datetime.datetime.now(), st.session_state.db_id
                                                       ))
@@ -683,9 +689,20 @@ elif st.session_state.page == 'agent_info':
         <p>Dear {first_name},</p>
         <p>Thank you for registering as a freelance, independent sales agent. Please note the following rules:</p>
         <ol>
-        <li><strong>Confidentiality and Privacy</strong> – As a freelance agent, you may encounter sensitive business and client information. You are expected to keep such information private, use it only for the purpose of promoting our plans, and never share it with competitors or unauthorised parties. All client data and personal information must be handled in line with data protection and privacy standards. Please read our privacy policy here.</li>
-        <li><strong>Plans Available for Sale:</strong><br> a. <strong>Local (Retail)</strong> – Life Starter, Couples Plan, Life Plus, Premium Life, Boss Life, and Executive Boss.<br> b. <strong>Local (Corporate)</strong> – Basic, Vital, Plus, Premium, Premium Plus, Prestige, Prestige Plus, and Executive Prestige.<br> c. <strong>International</strong> – BUPA and ACE.</li>
-        <li><strong>Commission</strong> – Commission is earned only on completed sales where the premium has been fully paid, and enrolment finalised. Commissions are calculated monthly and paid at the following rates:<br> * Local Plans (Retail) – 10% per individual or family. The Couples Plan may only be sold to couples.<br> * Local Plans (Corporate) – 10% per individual or family<br> * International Plans (BUPA) – 2.5% (sold alone), 3% (with local plans), 4% (with ACE), 5% (with ACE + local plans).<br> * International Plans (ACE) – 3% (sold alone), 4% (with Bupa or local plans), 5% (with Bupa + local plans).<br> We may review our commission rates from time to time, and notify you in such instances.</li>
+        <li><strong>Confidentiality and Privacy</strong> – As a freelance agent, you may encounter sensitive business and client information. All information received in the course of business is strictly confidential and shall be treated as such. You shall only use such information for the purpose of promoting our plans and never disclose it to any third parties without prior written approval first had and obtained. All client data and personal information must also be handled in line with data protection and privacy standards. Please read our privacy policy here.</li>
+        <li><strong>Plans Available for Sale:</strong><br>
+        a. <strong>Local (Retail)</strong> – Couples Plan, Life Plus, Premium Life, Boss Life, and Executive Boss.<br>
+        b. <strong>Local (Corporate)</strong> – Plus, Premium, Premium Plus, Prestige, Prestige Plus, and Executive Prestige.<br>
+        c. <strong>Local (SME)</strong> – SME Plus, SME Premium, SME Boss.<br>
+        d. <strong>International</strong> – BUPA and ACE.</li>
+        <li><strong>Commission</strong> – Commission is earned only on completed new sales where the premium has been fully paid, and enrolment finalised. Commissions accrue monthly and are payable within 10 days after the end of each month, at the following rates:<br>
+        * Local Plans (Retail) – 10% per individual or family. The Couples Plan should only be sold to couples.<br>
+        * Local SME Plans – 10% per individual or family.<br>
+        * Local Plans (Corporate) – 10% per individual or family.<br>
+        * International Plans (BUPA) – 2.5% (sold alone), 3% (with local plans), 4% (with ACE), 5% (with ACE + local plans).<br>
+        * International Plans (ACE) – 3% (sold alone), 4% (with Bupa or local plans), 5% (with Bupa + local plans).<br><br>
+        Notwithstanding the foregoing, where plans are sold at a discount or are customised, the commission payable shall range between 2% and 7%, depending on the extent of the discount or customization applied. No commission shall be payable on brokered sales.<br>
+        We may review our commission rates from time to time and notify you in such instances.</li>
         <li><strong>Family Definition and Age Limits</strong> – For local plans, a "Family" means a principal, one spouse, and up to 4 children (maximum of 6 persons). Children must be under 18 years for retail plans and under 21 years for corporate plans. The age limit for a principal or spouse is 60 years for retail plans and 65 years for corporate plans.</li>
         </ol>
         <p>Best regards,<br>Avon Healthcare Limited</p>
@@ -901,6 +918,11 @@ elif st.session_state.page == 'profile':
                     st.write(f"**Bank:** {agent_dict.get('bank_name', 'N/A')}")
                     st.write(f"**Account Number:** {agent_dict.get('account_number', 'N/A')}")
                     st.write(f"**Account Name:** {agent_dict.get('account_name', 'N/A')}")
+                
+                with st.expander('Business Information'):
+                    st.write(f"**Region:** {agent_dict.get('region', 'N/A')}")
+                    st.write(f"**Agent Category:** {agent_dict.get('Agentcategory', 'N/A')}")
+                    st.write(f"**Preferred Territory:** {agent_dict.get('preferred_territory', 'N/A')}")
                 
                 with st.expander('Documents'):
                     if agent_dict.get('passport_photo_blob_url'):
@@ -1258,6 +1280,7 @@ elif st.session_state.page == 'admin_agent_detail':
 
             with st.expander("Business Information"):
                 st.write(f"**Region:** {agent.get('region', 'N/A')}")
+                st.write(f"**Agent Category:** {agent.get('Agentcategory', 'N/A')}")
                 st.write(f"**Preferred Territory:** {agent.get('preferred_territory', 'N/A')}")
 
             with st.expander("Documents"):
