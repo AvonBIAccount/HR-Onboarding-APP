@@ -433,18 +433,24 @@ elif st.session_state.page == 'agent_info':
             st.rerun()
     st.title('Agent Information Form')
     st.write('Please complete all required fields and upload necessary documents.')
-    with st.form('agent_info_form', clear_on_submit=False):
-        # Fetch existing agent data to prefill form
-        agent_data_prefill = {}
-        if st.session_state.db_id:
-            try:
-                cursor.execute("SELECT * FROM agents WHERE id = ?", (st.session_state.db_id,))
-                row = cursor.fetchone()
-                if row:
-                    columns = [column[0] for column in cursor.description]
-                    agent_data_prefill = dict(zip(columns, row))
-            except Exception as e:
-                st.error(f'Error fetching agent data: {e}')
+    # FORM REMOVED - Using regular widgets for dynamic LGA update & file persistence
+    # Initialize session state for uploaded files (prevents loss on rerun)
+    for key in ['uploaded_id_doc', 'uploaded_passport', 'uploaded_address_proof']:
+        if key not in st.session_state:
+            st.session_state[key] = None
+
+    # Fetch agent data outside form context
+    agent_data_prefill = {}
+    if st.session_state.db_id:
+        try:
+            cursor.execute("SELECT * FROM agents WHERE id = ?", (st.session_state.db_id,))
+            row = cursor.fetchone()
+            if row:
+                columns = [column[0] for column in cursor.description]
+                agent_data_prefill = dict(zip(columns, row))
+        except Exception as e:
+            st.error(f'Error fetching agent data: {e}')
+        # Prefill data already fetched above
         
         # Agent ID input
         st.subheader('Agent Identification')
@@ -516,6 +522,7 @@ elif st.session_state.page == 'agent_info':
                 lga_index = lga_options.index(prefilled_lga)
             
             lga = st.selectbox('Local Government Area *', lga_options, index=lga_index, key='lga')
+            st.caption(f"{len(lga_options)} LGAs available in {state}")
 
         # Next of Kin
         st.subheader('Next of Kin')
@@ -539,7 +546,13 @@ elif st.session_state.page == 'agent_info':
         with col8:
             if agent_data_prefill.get('id_document_blob_url'):
                 st.write('ID Document already uploaded ✅')
+            if agent_data_prefill.get('id_document_blob_url'):
+                st.success('ID Document already uploaded')
             id_document = st.file_uploader('Upload ID Document *', type=['pdf', 'jpg', 'jpeg', 'png'], help='Max 5MB', key='id_document')
+            if id_document:
+                st.session_state.uploaded_id_doc = id_document
+            elif st.session_state.uploaded_id_doc:
+                id_document = st.session_state.uploaded_id_doc
 
         # Banking Information
         st.subheader('Banking Information')
@@ -561,7 +574,7 @@ elif st.session_state.page == 'agent_info':
 
         # Business Information
         st.subheader('Business Information')
-        col11, col12, col13 = st.columns(3)
+        col11, col12 = st.columns(2)
         with col11:
             region_list = ['North', 'South', 'East', 'West', 'Central', 'Multi-Region']
             region_index = region_list.index(agent_data_prefill.get('region', 'North')) if agent_data_prefill.get('region') in region_list else 0
@@ -570,8 +583,12 @@ elif st.session_state.page == 'agent_info':
             agent_category_list = ['Heirs Agent', 'Independent Agent']
             agent_category_index = agent_category_list.index(agent_data_prefill.get('Agentcategory', 'Independent Agent')) if agent_data_prefill.get('Agentcategory') in agent_category_list else 1
             agent_category = st.selectbox('Agent Category *', agent_category_list, index=agent_category_index, key='agent_category')
-        with col13:
+        
+        col14, col15 = st.columns(2)
+        with col14:
             preferred_territory = st.text_input('Preferred Territory (Optional)', value=agent_data_prefill.get('preferred_territory', ''), key='preferred_territory')
+        with col15:
+            tax_id = st.text_input('Tax ID (Optional)', value=agent_data_prefill.get('TaxID', ''), key='tax_id', help='Enter your Tax Identification Number if available')
 
         # Document Uploads
         st.subheader('Document Uploads')
@@ -579,11 +596,23 @@ elif st.session_state.page == 'agent_info':
         with col13:
             if agent_data_prefill.get('passport_photo_blob_url'):
                 st.write('Passport photo already uploaded ✅')
+            if agent_data_prefill.get('passport_photo_blob_url'):
+                st.success('Passport photo already uploaded')
             passport_photo = st.file_uploader('Passport Photograph *', type=['jpg', 'jpeg', 'png'], help='Max 2MB', key='passport_photo')
+            if passport_photo:
+                st.session_state.uploaded_passport = passport_photo
+            elif st.session_state.uploaded_passport:
+                passport_photo = st.session_state.uploaded_passport
         with col14:
             if agent_data_prefill.get('address_proof_blob_url'):
                 st.write('Address proof already uploaded ✅')
+            if agent_data_prefill.get('address_proof_blob_url'):
+                st.success('Address proof already uploaded')
             address_proof = st.file_uploader('Proof of Address *', type=['pdf', 'jpg', 'jpeg', 'png'], help='Max 5MB', key='address_proof')
+            if address_proof:
+                st.session_state.uploaded_address_proof = address_proof
+            elif st.session_state.uploaded_address_proof:
+                address_proof = st.session_state.uploaded_address_proof
 
         # Single submit button
         st.write('---')
@@ -591,7 +620,7 @@ elif st.session_state.page == 'agent_info':
         is_update = agent_data_prefill.get('application_status') not in [None, 'Incomplete']
         button_text = 'Update Application' if is_update else 'Submit Application'
 
-        submit_info = st.form_submit_button(button_text, use_container_width=True)
+        submit_info = st.button(button_text, use_container_width=True, type='primary')
         
         if submit_info:
             # Validation
@@ -658,6 +687,8 @@ elif st.session_state.page == 'agent_info':
                             st.error('Error uploading documents. Please try again.')
                         else:
                             # Update existing agent record using db_id
+                            
+
                             cursor.execute('''
                                                       UPDATE agents SET
                                                       prefix = ?, first_name = ?, surname = ?, date_of_birth = ?, age = ?, 
@@ -665,20 +696,28 @@ elif st.session_state.page == 'agent_info':
                                                       state = ?, lga = ?, nok_name = ?, nok_relationship = ?, nok_contact = ?,
                                                       id_type = ?, id_number = ?, id_document_blob_url = ?, id_document_blob_name = ?,
                                                       bank_name = ?, account_number = ?, account_name = ?, region = ?, 
-                                                      preferred_territory = ?, Agentcategory = ?, passport_photo_blob_url = ?, passport_photo_blob_name = ?,
+                                                      preferred_territory = ?, Agentcategory = ?, TaxID = ?, passport_photo_blob_url = ?, passport_photo_blob_name = ?,
                                                       address_proof_blob_url = ?, address_proof_blob_name = ?,
                                                       application_status = ?, submitted_date = ?, updated_at = ?
                                                       WHERE id = ?
                                                       ''', (
+
+
                                                       prefix, first_name, surname, date_of_birth, age, gender, marital_status,
                                                       mobile_number, residential_address, state, lga, nok_name, nok_relationship,
                                                       nok_contact, id_type, id_number, id_url, id_blob_name, bank_name,
-                                                      account_number, account_name, region, preferred_territory, agent_category, passport_url,
+                                                      account_number, account_name, region, preferred_territory, agent_category, tax_id, passport_url,
                                                       passport_blob_name, address_url, address_blob_name, 'Pending',
                                                       datetime.datetime.now(), datetime.datetime.now(), st.session_state.db_id
                                                       ))
+                                         
                             
                             conn.commit()
+                            # Clear persisted uploaded files after successful submission
+                            st.session_state.uploaded_id_doc = None
+                            st.session_state.uploaded_passport = None
+                            st.session_state.uploaded_address_proof = None
+                            st.success("Application updated successfully!")
                             # Check if this is first submission or an update
                             is_first_submission = agent_data_prefill.get('application_status') == 'Incomplete'
                             if is_first_submission:
@@ -923,6 +962,7 @@ elif st.session_state.page == 'profile':
                     st.write(f"**Region:** {agent_dict.get('region', 'N/A')}")
                     st.write(f"**Agent Category:** {agent_dict.get('Agentcategory', 'N/A')}")
                     st.write(f"**Preferred Territory:** {agent_dict.get('preferred_territory', 'N/A')}")
+                    st.write(f"**Tax ID:** {agent_dict.get('TaxID', 'N/A')}")
                 
                 with st.expander('Documents'):
                     if agent_dict.get('passport_photo_blob_url'):
@@ -1282,6 +1322,7 @@ elif st.session_state.page == 'admin_agent_detail':
                 st.write(f"**Region:** {agent.get('region', 'N/A')}")
                 st.write(f"**Agent Category:** {agent.get('Agentcategory', 'N/A')}")
                 st.write(f"**Preferred Territory:** {agent.get('preferred_territory', 'N/A')}")
+                st.write(f"**Tax ID:** {agent.get('TaxID', 'N/A')}")
 
             with st.expander("Documents"):
                 if agent.get('passport_photo_blob_url'):
