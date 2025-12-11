@@ -503,7 +503,7 @@ elif st.session_state.page == 'agent_info':
             state_list = [
                 'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 
                 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 
-                'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 
+                'Ekiti', 'Enugu', 'Federal Capital Territory', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 
                 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 
                 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 
                 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
@@ -765,7 +765,7 @@ elif st.session_state.page == 'agent_info':
         </body>
         </html>
     '''
-                                hr_success = send_email(['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'New Agent Application Submitted - Review Required', hr_body)
+                                hr_success = send_email(['humanresources@avonhealthcare.com','salesdepartment@avonhealthcare.com','ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'New Agent Application Submitted - Review Required', hr_body)
                                 if hr_success:
                                     st.success('✅ Application submitted and notifications sent successfully!')
                                 else:
@@ -798,7 +798,7 @@ elif st.session_state.page == 'agent_info':
         </body>
         </html>
     '''
-                                hr_update_success = send_email(['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'Agent Profile Updated - Information Changed', hr_update_body)
+                                hr_update_success = send_email(['humanresources@avonhealthcare.com','salesdepartment@avonhealthcare.com','ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com'], 'Agent Profile Updated - Information Changed', hr_update_body)
                                 if update_success and hr_update_success:
                                     st.success('✅ Profile updated and notifications sent successfully!')
                                 elif update_success:
@@ -1180,7 +1180,7 @@ elif st.session_state.page == 'admin_dashboard':
                                             agent_dict['email'],
                                             'Congratulations! Your Agent Application has been Approved',
                                             approval_body,
-                                            cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                            cc_emails=['humanresources@avonhealthcare.com','salesdepartment@avonhealthcare.com','ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
                                         )
                                         if approval_success:
                                             st.success(f"Agent {agent_dict['agent_id']} approved and notification sent")
@@ -1217,7 +1217,7 @@ elif st.session_state.page == 'admin_dashboard':
 - Application Reference: {agent_dict['application_ref']}<br>
 - Status: Not Approved<br>
 - Review Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
-<p>If you have any questions about this decision, please contact our HR team at ifeoluwa.adeniyi@avonhealthcare.com.</p>
+<p>If you have any questions about this decision, please contact our HR team at humanresources@avonhealthcare.com.</p>
 <p>Best regards,<br>Avon Healthcare Limited</p>
 <hr>
 {DISCLAIMER_HTML}
@@ -1228,7 +1228,7 @@ elif st.session_state.page == 'admin_dashboard':
                                             agent_dict['email'],
                                             'Agent Application Update - Application Not Approved',
                                             rejection_body,
-                                            cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                            cc_emails=['humanresources@avonhealthcare.com','salesdepartment@avonhealthcare.com','ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
                                         )
                                         if rejection_success:
                                             st.success(f"Agent {agent_dict['agent_id']} rejected and notification sent")
@@ -1406,7 +1406,7 @@ elif st.session_state.page == 'admin_agent_detail':
                                 agent['email'],
                                 'Congratulations! Your Agent Application has been Approved',
                                 approval_body,
-                                cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                cc_emails=['humanresources@avonhealthcare.com','salesdepartment@avonhealthcare.com','ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
                             )
                             if approval_success:
                                 st.success(f"Agent {agent['agent_id']} approved and notification sent")
@@ -1435,7 +1435,7 @@ elif st.session_state.page == 'admin_agent_detail':
 - Application Reference: {agent['application_ref']}<br>
 - Status: Not Approved<br>
 - Review Date: {datetime.datetime.now().strftime('%Y-%m-%d')}</p>
-<p>If you have any questions about this decision, please contact our HR team at ifeoluwa.adeniyi@avonhealthcare.com.</p>
+<p>If you have any questions about this decision, please contact our HR team at humanresources@avonhealthcare.com .</p>
 <p>Best regards,<br>Avon Healthcare Limited</p>
 <hr>
 {DISCLAIMER_HTML}
@@ -1446,7 +1446,7 @@ elif st.session_state.page == 'admin_agent_detail':
                                 agent['email'],
                                 'Agent Application Update - Application Not Approved',
                                 rejection_body,
-                                cc_emails=['ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
+                                cc_emails=['humanresources@avonhealthcare.com','salesdepartment@avonhealthcare.com','ifeoluwa.adeniyi@avonhealthcare.com', 'adebola.adesoyin@avonhealthcare.com']
                             )
                             if rejection_success:
                                 st.success(f"Agent {agent['agent_id']} rejected and notification sent")
